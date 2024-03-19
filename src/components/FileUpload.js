@@ -1,167 +1,22 @@
-// src/components/FileUpload.js
-
-import React, {useEffect, useState} from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, {useState, useEffect} from 'react';
+import {useNavigate} from 'react-router-dom';
+import {useDispatch, useSelector} from 'react-redux';
+import {selectFile, uploadFile} from '../redux/actions/fileActions';
 import Web3 from 'web3';
+import {unwrapResult} from "@reduxjs/toolkit";
+import FileRegistryContract from '../contracts/FileRegistry.json';
 
 const FileUpload = () => {
-    const [selectedFile, setSelectedFile] = useState(null);
+    const dispatch = useDispatch();
+    const navigate = useNavigate();
     const [web3, setWeb3] = useState(null);
     const [accounts, setAccounts] = useState([]);
+    const [fileInput, setFileInput] = useState(null); // New state to hold the file input ref
+    const {selectedFile, loading, error} = useSelector((state) => state.file);
     const [contract, setContract] = useState(null);
-    const navigate = useNavigate();
-    const contractAddress = '0xF5fcaD7E80AFee336dF0d8026d63697038e18504';
-    const contractABI = [
-        {
-            "anonymous": false,
-            "inputs": [
-                {
-                    "indexed": true,
-                    "internalType": "address",
-                    "name": "owner",
-                    "type": "address"
-                },
-                {
-                    "indexed": false,
-                    "internalType": "string",
-                    "name": "cid",
-                    "type": "string"
-                },
-                {
-                    "indexed": false,
-                    "internalType": "string",
-                    "name": "fileHash",
-                    "type": "string"
-                }
-            ],
-            "name": "FileRegistered",
-            "type": "event"
-        },
-        {
-            "inputs": [
-                {
-                    "internalType": "string",
-                    "name": "cid",
-                    "type": "string"
-                },
-                {
-                    "internalType": "string",
-                    "name": "fileHash",
-                    "type": "string"
-                }
-            ],
-            "name": "registerFile",
-            "outputs": [],
-            "stateMutability": "nonpayable",
-            "type": "function"
-        },
-        {
-            "inputs": [
-                {
-                    "internalType": "string",
-                    "name": "",
-                    "type": "string"
-                }
-            ],
-            "name": "cidToFileHash",
-            "outputs": [
-                {
-                    "internalType": "string",
-                    "name": "",
-                    "type": "string"
-                }
-            ],
-            "stateMutability": "view",
-            "type": "function"
-        },
-        {
-            "inputs": [
-                {
-                    "internalType": "string",
-                    "name": "",
-                    "type": "string"
-                }
-            ],
-            "name": "fileDetails",
-            "outputs": [
-                {
-                    "internalType": "address",
-                    "name": "owner",
-                    "type": "address"
-                },
-                {
-                    "internalType": "string",
-                    "name": "fileHash",
-                    "type": "string"
-                },
-                {
-                    "internalType": "uint256",
-                    "name": "timestamp",
-                    "type": "uint256"
-                }
-            ],
-            "stateMutability": "view",
-            "type": "function"
-        },
-        {
-            "inputs": [
-                {
-                    "internalType": "string",
-                    "name": "fileHash",
-                    "type": "string"
-                }
-            ],
-            "name": "getFileDetails",
-            "outputs": [
-                {
-                    "components": [
-                        {
-                            "internalType": "address",
-                            "name": "owner",
-                            "type": "address"
-                        },
-                        {
-                            "internalType": "string",
-                            "name": "fileHash",
-                            "type": "string"
-                        },
-                        {
-                            "internalType": "uint256",
-                            "name": "timestamp",
-                            "type": "uint256"
-                        }
-                    ],
-                    "internalType": "struct FileRegistry.FileDetails",
-                    "name": "",
-                    "type": "tuple"
-                }
-            ],
-            "stateMutability": "view",
-            "type": "function"
-        },
-        {
-            "inputs": [
-                {
-                    "internalType": "string",
-                    "name": "cid",
-                    "type": "string"
-                }
-            ],
-            "name": "getFileHash",
-            "outputs": [
-                {
-                    "internalType": "string",
-                    "name": "",
-                    "type": "string"
-                }
-            ],
-            "stateMutability": "view",
-            "type": "function"
-        }
-    ];
 
     useEffect(() => {
-        const initializeWeb3 = async () => {
+        const initializeWeb3AndContract = async () => {
             if (window.ethereum) {
                 const web3Instance = new Web3(window.ethereum);
                 setWeb3(web3Instance);
@@ -171,25 +26,33 @@ const FileUpload = () => {
                     const accounts = await web3Instance.eth.getAccounts();
                     setAccounts(accounts);
 
-                    const contractInstance = new web3Instance.eth.Contract(contractABI, contractAddress);
+                    // Assuming your contract is deployed on a network whose ID is available in FileRegistryContract.networks
+                    const networkId = await web3Instance.eth.net.getId();
+                    const deployedNetwork = FileRegistryContract.networks[networkId];
+                    const contractInstance = new web3Instance.eth.Contract(
+                        FileRegistryContract.abi,
+                        deployedNetwork && deployedNetwork.address,
+                    );
                     setContract(contractInstance);
                 } catch (error) {
-                    console.error('Error initializing Web3:', error);
+                    console.error('Error initializing Web3 or contract:', error);
                 }
             } else {
                 console.error('Web3 not detected');
             }
         };
 
-        initializeWeb3();
+        initializeWeb3AndContract();
     }, []);
+    ;
 
     const handleFileChange = (event) => {
-        setSelectedFile(event.target.files[0]);
+        dispatch(selectFile(event.target.files[0])); // Store file metadata in Redux
+        setFileInput(event.target); // Store the file input ref
     };
 
     const handleUpload = async () => {
-        if (!selectedFile) {
+        if (!selectedFile || !fileInput || !fileInput.files[0]) {
             alert('Please select a file to upload.');
             return;
         }
@@ -197,55 +60,51 @@ const FileUpload = () => {
         const token = localStorage.getItem('jwtToken');
         if (!token) {
             console.error('No JWT token found in local storage.');
-            navigate('/');
+            navigate('/login');
             return;
         }
 
-        const formData = new FormData();
-        formData.append('file', selectedFile);
+        if (!web3 || !accounts || accounts.length === 0) {
+            console.error('Web3 or accounts not available.');
+            alert('Please connect your Ethereum wallet.');
+            return;
+        }
 
         try {
-            const response = await fetch('http://localhost:8083/upload', {
-                method: 'POST',
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-                body: formData,
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to upload file');
-            }
-
-            const data = await response.json();
-            console.log('File uploaded successfully:', data);
-
-            // Register the file on the blockchain
-            await registerFileOnBlockchain(data.cid, data.originalFileHash);
+            const actionResult = await dispatch(uploadFile({file: fileInput.files[0], token, account: accounts[0]}));
+            const uploadedData = unwrapResult(actionResult);
+            await registerFileOnBlockchain(uploadedData.cid, uploadedData.originalFileHash);
         } catch (error) {
-            console.error('Error uploading file:', error);
-            // You can handle the error as needed (e.g., display an error message)
+            console.error('Upload or registration failed:', error);
+            alert('Upload or registration failed.');
         }
     };
 
     const registerFileOnBlockchain = async (cid, fileHash) => {
-        if (!contract) return;
+        if (!web3 || !contract || !accounts.length) {
+            console.error('Web3, contract, or accounts not initialized');
+            alert('Blockchain registration failed. Please ensure your wallet is connected.');
+            return;
+        }
 
         console.log("Attempting to register file with CID:", cid, "and file hash:", fileHash);
 
         try {
-            await contract.methods.registerFile(cid, fileHash).send({ from: accounts[0] });
-            alert('File registered successfully!');
+            await contract.methods.registerFile(cid, fileHash).send({from: accounts[0]});
+            alert('File registered successfully on the blockchain!');
         } catch (error) {
-            console.error('Error registering file:', error);
-            alert('Failed to register file.');
+            console.error('Error registering file on the blockchain:', error);
+            alert('Failed to register file on the blockchain.');
         }
     };
 
     return (
         <div>
-            <input type="file" onChange={handleFileChange} />
-            <button onClick={handleUpload}>Upload</button>
+            <input type="file" onChange={handleFileChange}/>
+            <button onClick={handleUpload} disabled={loading}>
+                {loading ? 'Uploading...' : 'Upload'}
+            </button>
+            {error && <p>Error: {error}</p>}
         </div>
     );
 };
