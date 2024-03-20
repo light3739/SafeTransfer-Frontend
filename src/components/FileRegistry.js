@@ -191,7 +191,7 @@ const FileRegistry = () => {
 
         try {
             // Request a nonce from the server
-            const response = await fetch(`http://localhost:8083/generateNonce`, {
+            const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/generateNonce`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -205,7 +205,7 @@ const FileRegistry = () => {
             const signature = await web3.eth.personal.sign(nonce, accounts[0], '');
 
             // Send the signature and Ethereum address to the server for verification
-            const verifyResponse = await fetch(`http://localhost:8083/verifySignature`, {
+            const verifyResponse = await fetch(`${process.env.REACT_APP_API_BASE_URL}/verifySignature`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -234,7 +234,7 @@ const FileRegistry = () => {
         }
 
         try {
-            const response = await fetch('http://localhost:8083/checkToken', {
+            const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/checkToken`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',

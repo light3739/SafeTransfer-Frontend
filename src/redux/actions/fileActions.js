@@ -25,7 +25,7 @@ export const uploadFile = createAsyncThunk(
         formData.append('file', file); // Use the file directly from the input
 
         try {
-            const response = await fetch('http://localhost:8083/upload', {
+            const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/upload`, {
                 method: 'POST',
                 headers: {
                     Authorization: `Bearer ${token}`,
@@ -74,12 +74,12 @@ export const downloadFile = (cid, fileHash, navigate) => async (dispatch) => {
     const token = localStorage.getItem('jwtToken');
     if (!token) {
         console.error('No JWT token found in local storage.');
-        navigate('/login');
+        navigate('/');
         return;
     }
 
     try {
-        const response = await fetch(`http://localhost:8083/download/${cid}`, {
+        const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/download/${cid}`, {
             method: 'GET',
             headers: {
                 Authorization: `Bearer ${token}`,
