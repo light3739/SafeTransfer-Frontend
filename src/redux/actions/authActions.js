@@ -7,7 +7,7 @@ export const authenticateUser = (web3, account) => async (dispatch) => {
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ ethereumAddress: account }),
+            body: JSON.stringify({ethereumAddress: account}),
         });
         const data = await response.json();
         const nonce = data.nonce;
@@ -19,27 +19,30 @@ export const authenticateUser = (web3, account) => async (dispatch) => {
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ ethereumAddress: account, signature, message: nonce }),
+            body: JSON.stringify({ethereumAddress: account, signature, message: nonce}),
         });
         const verifyData = await verifyResponse.json();
         if (verifyData.token) {
             localStorage.setItem('jwtToken', verifyData.token);
-            dispatch({ type: 'AUTHENTICATE_USER_SUCCESS' });
+            dispatch({type: 'AUTHENTICATE_USER_SUCCESS'});
             console.log("Authentication successful, JWT token stored.");
         } else {
-            throw new Error('Authentication failed');
+            console.error('Authentication failed');
+            dispatch({type: 'AUTHENTICATE_USER_FAILURE'});
         }
     } catch (error) {
         console.error('Error during authentication:', error);
         alert('Authentication failed.');
-        dispatch({ type: 'AUTHENTICATE_USER_FAILURE' });
+        dispatch({type: 'AUTHENTICATE_USER_FAILURE'});
     }
 };
 
-export const fetchTestData = () => async (dispatch) => {
+
+export const checkAuthToken = () => async (dispatch) => {
     const token = localStorage.getItem('jwtToken');
     if (!token) {
         console.error('No JWT token found in local storage.');
+        dispatch({type: 'AUTHENTICATE_USER_FAILURE'});
         return;
     }
 
@@ -52,15 +55,15 @@ export const fetchTestData = () => async (dispatch) => {
             }
         });
 
-        if (!response.ok) {
-            throw new Error('Failed to fetch test data');
+        if (response.ok) {
+            dispatch({type: 'AUTHENTICATE_USER_SUCCESS'});
+        } else {
+            console.error('Token validation failed');
+            dispatch({type: 'AUTHENTICATE_USER_FAILURE'});
         }
-
-        const data = await response.json();
-        console.log('Test data:', data);
-        dispatch({ type: 'FETCH_TEST_DATA_SUCCESS', payload: data });
     } catch (error) {
-        console.error('Error fetching test data:', error);
-        dispatch({ type: 'FETCH_TEST_DATA_FAILURE' });
+        console.error('Error validating token:', error);
+        dispatch({type: 'AUTHENTICATE_USER_FAILURE'});
     }
 };
+
