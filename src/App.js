@@ -1,8 +1,8 @@
 // src/App.js
 
 import React from 'react';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import { Provider } from 'react-redux';
+import {BrowserRouter as Router, Route, Routes} from 'react-router-dom';
+import {Provider} from 'react-redux';
 import store from './redux/store';
 import FileRegistry from './components/FileRegistry';
 import FileUpload from './components/FileUpload';
@@ -13,11 +13,10 @@ const App = () => {
         <Provider store={store}>
             <Router>
                 <div>
-                    <h1>File Registry</h1>
                     <Routes>
-                        <Route path="/" element={<FileRegistry />} />
-                        <Route path="/upload" element={<FileUpload />} />
-                        <Route path="/download" element={<FileDownload />} />
+                        <Route path="/" element={<FileRegistry/>}/>
+                        <Route path="/upload" element={<FileUpload/>}/>
+                        <Route path="/download" element={<FileDownload/>}/>
                     </Routes>
                 </div>
             </Router>

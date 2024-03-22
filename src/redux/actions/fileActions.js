@@ -1,7 +1,8 @@
 // src/redux/actions/fileActions.js
-import Web3 from 'web3';
 import FileRegistryContract from '../../contracts/FileRegistry.json';
-import {createAsyncThunk} from '@reduxjs/toolkit';
+import { createAsyncThunk } from '@reduxjs/toolkit';
+import useWeb3 from '../../hooks/useWeb3';
+import Web3 from "web3";
 
 export const selectFile = (file) => {
     const fileAttributes = {
@@ -17,19 +18,36 @@ export const selectFile = (file) => {
     };
 };
 
+export const initializeContractInstance = async (web3) => {
+    if (web3) {
+        try {
+            const networkId = await web3.eth.net.getId();
+            const deployedNetwork = FileRegistryContract.networks[networkId];
+            const contractInstance = new web3.eth.Contract(
+                FileRegistryContract.abi,
+                deployedNetwork && deployedNetwork.address,
+            );
 
-export const uploadFile = createAsyncThunk(
+            return contractInstance;
+        } catch (error) {
+            console.error('Error initializing contract:', error);
+            throw error;
+        }
+    } else {
+        console.error('Web3 not available');
+        throw new Error('Web3 not available');
+    }
+};export const uploadFile = createAsyncThunk(
     'file/uploadFile',
-    async ({ file, token, account }, { rejectWithValue }) => {
+    async ({ file, token, account, contract }, { rejectWithValue }) => {
         const formData = new FormData();
-        formData.append('file', file); // Use the file directly from the input
+        formData.append('file', file);
 
         try {
             const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/upload`, {
                 method: 'POST',
                 headers: {
                     Authorization: `Bearer ${token}`,
-                    // Optionally include EthereumAddress if needed
                 },
                 body: formData,
             });
@@ -41,14 +59,36 @@ export const uploadFile = createAsyncThunk(
             const data = await response.json();
             console.log('File uploaded successfully:', data);
 
+            await registerFileOnBlockchain(contract, account, data.cid, data.originalFileHash);
+
             return data;
         } catch (error) {
             return rejectWithValue(error.message);
         }
+    },
+    {
+        serializableCheck: {
+            ignoredActionPaths: ['meta.arg.contract'],
+            ignoredPaths: ['web3.web3'],
+        },
     }
 );
+
+const registerFileOnBlockchain = async (contract, account, cid, fileHash) => {
+    console.log("Attempting to register file with CID:", cid, "and file hash:", fileHash);
+
+    try {
+        await contract.methods.registerFile(cid, fileHash).send({ from: account });
+        alert('File registered successfully on the blockchain!');
+    } catch (error) {
+        console.error('Error registering file on the blockchain:', error);
+        alert('Failed to register file on the blockchain.');
+        throw error;
+    }
+};
+
 export const fetchFileDetails = (cid, navigate) => async (dispatch) => {
-    dispatch({type: 'FETCH_FILE_DETAILS_REQUEST'});
+    dispatch({ type: 'FETCH_FILE_DETAILS_REQUEST' });
 
     try {
         const web3 = new Web3(window.ethereum);
@@ -59,17 +99,17 @@ export const fetchFileDetails = (cid, navigate) => async (dispatch) => {
         const fileHash = await contract.methods.getFileHash(cid).call();
         const details = await contract.methods.getFileDetails(fileHash).call();
 
-        dispatch({type: 'FETCH_FILE_DETAILS_SUCCESS', payload: details});
+        dispatch({ type: 'FETCH_FILE_DETAILS_SUCCESS', payload: details });
 
         // Proceed with file download after fetching file details
         dispatch(downloadFile(cid, fileHash, navigate));
     } catch (error) {
-        dispatch({type: 'FETCH_FILE_DETAILS_FAILURE', payload: error.message});
+        dispatch({ type: 'FETCH_FILE_DETAILS_FAILURE', payload: error.message });
     }
 };
 
 export const downloadFile = (cid, fileHash, navigate) => async (dispatch) => {
-    dispatch({type: 'DOWNLOAD_FILE_REQUEST'});
+    dispatch({ type: 'DOWNLOAD_FILE_REQUEST' });
 
     const token = localStorage.getItem('jwtToken');
     if (!token) {
@@ -99,8 +139,8 @@ export const downloadFile = (cid, fileHash, navigate) => async (dispatch) => {
         link.click();
         link.remove();
 
-        dispatch({type: 'DOWNLOAD_FILE_SUCCESS'});
+        dispatch({ type: 'DOWNLOAD_FILE_SUCCESS' });
     } catch (error) {
-        dispatch({type: 'DOWNLOAD_FILE_FAILURE', payload: error.message});
+        dispatch({ type: 'DOWNLOAD_FILE_FAILURE', payload: error.message });
     }
 };

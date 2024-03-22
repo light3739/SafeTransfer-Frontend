@@ -1,14 +1,14 @@
 // src/components/FileDownload.js
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux';
-import { fetchFileDetails, downloadFile } from '../redux/actions/fileActions';
+import React, {useState, useEffect} from 'react';
+import {useNavigate} from 'react-router-dom';
+import {useDispatch, useSelector} from 'react-redux';
+import {fetchFileDetails, downloadFile} from '../redux/actions/fileActions';
 
 const FileDownload = () => {
     const [cid, setCid] = useState('');
     const navigate = useNavigate();
     const dispatch = useDispatch();
-    const { fileDetails, loading, error } = useSelector((state) => state.file);
+    const {fileDetails, loading, error} = useSelector((state) => state.file);
 
     const handleDownload = async () => {
         if (!cid) {

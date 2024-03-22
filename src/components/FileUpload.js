@@ -1,54 +1,27 @@
-import React, {useState, useEffect} from 'react';
-import {useNavigate} from 'react-router-dom';
-import {useDispatch, useSelector} from 'react-redux';
-import {selectFile, uploadFile} from '../redux/actions/fileActions';
-import Web3 from 'web3';
-import {unwrapResult} from "@reduxjs/toolkit";
-import FileRegistryContract from '../contracts/FileRegistry.json';
+// src/components/FileUpload.js
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { selectFile, uploadFile, initializeContractInstance } from '../redux/actions/fileActions';
+import { setSelectedAccount } from '../redux/slices/web3Slice';
+import useWeb3 from '../hooks/useWeb3';
 
 const FileUpload = () => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
-    const [web3, setWeb3] = useState(null);
-    const [accounts, setAccounts] = useState([]);
-    const [fileInput, setFileInput] = useState(null); // New state to hold the file input ref
-    const {selectedFile, loading, error} = useSelector((state) => state.file);
-    const [contract, setContract] = useState(null);
+    const { web3, accounts } = useWeb3();
+    const [fileInput, setFileInput] = useState(null);
+    const { selectedFile, loading, error } = useSelector((state) => state.file);
 
     useEffect(() => {
-        const initializeWeb3AndContract = async () => {
-            if (window.ethereum) {
-                const web3Instance = new Web3(window.ethereum);
-                setWeb3(web3Instance);
-
-                try {
-                    await window.ethereum.enable();
-                    const accounts = await web3Instance.eth.getAccounts();
-                    setAccounts(accounts);
-
-                    // Assuming your contract is deployed on a network whose ID is available in FileRegistryContract.networks
-                    const networkId = await web3Instance.eth.net.getId();
-                    const deployedNetwork = FileRegistryContract.networks[networkId];
-                    const contractInstance = new web3Instance.eth.Contract(
-                        FileRegistryContract.abi,
-                        deployedNetwork && deployedNetwork.address,
-                    );
-                    setContract(contractInstance);
-                } catch (error) {
-                    console.error('Error initializing Web3 or contract:', error);
-                }
-            } else {
-                console.error('Web3 not detected');
-            }
-        };
-
-        initializeWeb3AndContract();
-    }, []);
-    ;
+        if (accounts && accounts.length > 0) {
+            dispatch(setSelectedAccount(accounts[0]));
+        }
+    }, [dispatch, accounts]);
 
     const handleFileChange = (event) => {
-        dispatch(selectFile(event.target.files[0])); // Store file metadata in Redux
-        setFileInput(event.target); // Store the file input ref
+        dispatch(selectFile(event.target.files[0]));
+        setFileInput(event.target);
     };
 
     const handleUpload = async () => {
@@ -71,36 +44,17 @@ const FileUpload = () => {
         }
 
         try {
-            const actionResult = await dispatch(uploadFile({file: fileInput.files[0], token, account: accounts[0]}));
-            const uploadedData = unwrapResult(actionResult);
-            await registerFileOnBlockchain(uploadedData.cid, uploadedData.originalFileHash);
+            const contract = await initializeContractInstance(web3);
+            await dispatch(uploadFile({ file: fileInput.files[0], token, account: accounts[0], contract }));
         } catch (error) {
             console.error('Upload or registration failed:', error);
             alert('Upload or registration failed.');
         }
     };
 
-    const registerFileOnBlockchain = async (cid, fileHash) => {
-        if (!web3 || !contract || !accounts.length) {
-            console.error('Web3, contract, or accounts not initialized');
-            alert('Blockchain registration failed. Please ensure your wallet is connected.');
-            return;
-        }
-
-        console.log("Attempting to register file with CID:", cid, "and file hash:", fileHash);
-
-        try {
-            await contract.methods.registerFile(cid, fileHash).send({from: accounts[0]});
-            alert('File registered successfully on the blockchain!');
-        } catch (error) {
-            console.error('Error registering file on the blockchain:', error);
-            alert('Failed to register file on the blockchain.');
-        }
-    };
-
     return (
         <div>
-            <input type="file" onChange={handleFileChange}/>
+            <input type="file" onChange={handleFileChange} />
             <button onClick={handleUpload} disabled={loading}>
                 {loading ? 'Uploading...' : 'Upload'}
             </button>
