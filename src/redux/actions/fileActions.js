@@ -1,8 +1,8 @@
 // src/redux/actions/fileActions.js
 import FileRegistryContract from '../../contracts/FileRegistry.json';
 import { createAsyncThunk } from '@reduxjs/toolkit';
-import useWeb3 from '../../hooks/useWeb3';
 import Web3 from "web3";
+import axios from 'axios';
 
 export const selectFile = (file) => {
     const fileAttributes = {
@@ -37,26 +37,30 @@ export const initializeContractInstance = async (web3) => {
         console.error('Web3 not available');
         throw new Error('Web3 not available');
     }
-};export const uploadFile = createAsyncThunk(
+};
+
+export const uploadFile = createAsyncThunk(
     'file/uploadFile',
-    async ({ file, token, account, contract }, { rejectWithValue }) => {
+    async ({file, token, account, contract, onUploadProgress}, {rejectWithValue}) => {
         const formData = new FormData();
         formData.append('file', file);
 
         try {
-            const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/upload`, {
-                method: 'POST',
+            const response = await axios.post(`${process.env.REACT_APP_API_BASE_URL}/upload`, formData, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
-                body: formData,
+                onUploadProgress: (progressEvent) => {
+                    const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                    onUploadProgress(percentCompleted); // Callback function to update progress
+                },
             });
 
-            if (!response.ok) {
+            if (response.status !== 200) {
                 throw new Error('Failed to upload file');
             }
 
-            const data = await response.json();
+            const data = response.data;
             console.log('File uploaded successfully:', data);
 
             await registerFileOnBlockchain(contract, account, data.cid, data.originalFileHash);
@@ -68,7 +72,7 @@ export const initializeContractInstance = async (web3) => {
     },
     {
         serializableCheck: {
-            ignoredActionPaths: ['meta.arg.contract'],
+            ignoredActionPaths: ['meta.arg.contract', 'meta.arg.onUploadProgress'],
             ignoredPaths: ['web3.web3'],
         },
     }
