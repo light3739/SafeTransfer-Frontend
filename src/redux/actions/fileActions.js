@@ -101,31 +101,35 @@ export const fetchFileDetails = (cid, navigate) => async (dispatch) => {
         const contract = new web3.eth.Contract(FileRegistryContract.abi, deployedNetwork && deployedNetwork.address);
 
         const fileHash = await contract.methods.getFileHash(cid).call();
-        const details = await contract.methods.getFileDetails(fileHash).call();
+        // Convert BigInt to String for serialization
+        const fileHashStr = fileHash.toString();
+        const details = await contract.methods.getFileDetails(fileHashStr).call();
 
         dispatch({ type: 'FETCH_FILE_DETAILS_SUCCESS', payload: details });
+        const token = localStorage.getItem('jwtToken');
+        if (!token) {
+            console.error('No JWT token found in local storage.');
+            navigate('/');
+            return;
+        }
 
         // Proceed with file download after fetching file details
-        dispatch(downloadFile(cid, fileHash, navigate));
+        dispatch(downloadFile(cid, fileHashStr, navigate, token));
+        ;
     } catch (error) {
         dispatch({ type: 'FETCH_FILE_DETAILS_FAILURE', payload: error.message });
     }
 };
 
-export const downloadFile = (cid, fileHash, navigate) => async (dispatch) => {
+export const downloadFile = (cid, expectedHash, navigate, token) => async (dispatch) => {
     dispatch({ type: 'DOWNLOAD_FILE_REQUEST' });
 
-    const token = localStorage.getItem('jwtToken');
-    if (!token) {
-        console.error('No JWT token found in local storage.');
-        navigate('/');
-        return;
-    }
-
     try {
+        // Assuming you have the token available here, similar to the upload process
         const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/download/${cid}`, {
             method: 'GET',
             headers: {
+                // Include the Authorization header with the token
                 Authorization: `Bearer ${token}`,
             },
         });
@@ -134,14 +138,21 @@ export const downloadFile = (cid, fileHash, navigate) => async (dispatch) => {
             throw new Error('Failed to download file');
         }
 
+        const receivedHash = response.headers.get('X-File-Hash');
+        console.log(receivedHash)
+        if (receivedHash !== expectedHash) {
+            throw new Error('File hash does not match the blockchain record.');
+        }
+
         const blob = await response.blob();
-        const url = window.URL.createObjectURL(new Blob([blob]));
-        const link = document.createElement('a');
-        link.href = url;
-        link.setAttribute('download', `${fileHash}.txt`);
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
+        const downloadUrl = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = downloadUrl;
+        a.download = cid; // You might want to use a more descriptive filename
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(downloadUrl);
+        a.remove();
 
         dispatch({ type: 'DOWNLOAD_FILE_SUCCESS' });
     } catch (error) {
