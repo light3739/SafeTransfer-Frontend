@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useCallback} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {useDispatch} from 'react-redux';
 import {uploadFile, initializeContractInstance} from '../redux/actions/fileActions';
@@ -7,6 +7,7 @@ import useWeb3 from '../hooks/useWeb3';
 import {FaCloudUploadAlt, FaSpinner} from 'react-icons/fa';
 import {unwrapResult} from "@reduxjs/toolkit";
 
+
 const FileUpload = () => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
@@ -14,6 +15,8 @@ const FileUpload = () => {
     const [file, setFile] = useState(null);
     const [uploadProgress, setUploadProgress] = useState(0);
     const [isProcessing, setIsProcessing] = useState(false);
+    const [downloadCID, setDownloadCID] = useState(""); // State to store the CID for download
+
 
     useEffect(() => {
         if (accounts && accounts.length > 0) {
@@ -68,7 +71,8 @@ const FileUpload = () => {
                     }
                 }
             }));
-
+            const result = unwrapResult(actionResult);
+            setDownloadCID(result.cid);
             // Use unwrapResult to handle the promise returned by dispatch
             unwrapResult(actionResult);
 
@@ -81,16 +85,38 @@ const FileUpload = () => {
             alert('Upload or registration failed.');
             setUploadProgress(0); // Reset progress
             setIsProcessing(false); // Reset processing state
-            return; // Ensure no further execution in case of error
         }
     };
+    const navigateToDownload = () => {
+        if (downloadCID) {
+            navigate(`/download/${downloadCID}`);
+        }
+    };
+
+    const handleDragOver = useCallback((event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        // Add visual feedback
+    }, []);
+
+    const handleDrop = useCallback((event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const files = event.dataTransfer.files;
+        if (files.length) {
+            setFile(files[0]);
+        }
+        // Remove visual feedback
+    }, []);
     return (
         <div className="min-h-screen bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-            <div className="bg-white p-8 rounded-lg shadow-lg text-center max-w-md mx-auto">
+            <div className="bg-white p-8 rounded-lg shadow-lg text-center max-w-full md:max-w-2xl mx-auto">
                 <h2 className="text-3xl font-bold mb-6">Upload File</h2>
                 <div
                     className="border-4 border-dashed border-blue-500 p-8 mb-6 text-center rounded-lg cursor-pointer transition duration-300 ease-in-out hover:bg-blue-100"
                     onClick={() => document.getElementById('fileInput').click()}
+                    onDragOver={handleDragOver}
+                    onDrop={handleDrop}
                 >
                     <FaCloudUploadAlt className="text-6xl text-blue-500 mb-4 mx-auto"/>
                     <p className="text-xl text-gray-600 mb-4">
@@ -117,25 +143,16 @@ const FileUpload = () => {
                     {isProcessing ? <FaSpinner className="animate-spin inline mr-2"/> : null}
                     {uploadProgress > 0 ? 'Uploading...' : 'Upload'}
                 </button>
-                {uploadProgress > 0 && uploadProgress < 100 && (
+                {uploadProgress === 100 && !isProcessing && downloadCID && (
                     <div className="my-4">
-                        <div className="flex items-center justify-between mb-2">
-                            <span className="text-gray-600">Upload Progress:</span>
-                            <span className="text-gray-800 font-bold">{Math.round(uploadProgress)}%</span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                            <div
-                                className="bg-blue-500 h-2 rounded-full"
-                                style={{width: `${uploadProgress}%`, transition: 'width 0.5s ease-in-out'}}
-                            ></div>
-                        </div>
+                        <p className="text-center text-green-500 font-bold">Upload and processing complete!</p>
+                        <p
+                            className="text-blue-500 hover:underline cursor-pointer"
+                            onClick={navigateToDownload}
+                        >
+                            Download File
+                        </p>
                     </div>
-                )}
-                {isProcessing && (
-                    <div className="my-4 text-center text-gray-600">Processing file, please wait...</div>
-                )}
-                {uploadProgress === 100 && !isProcessing && (
-                    <div className="my-4 text-center text-green-500 font-bold">Upload and processing complete!</div>
                 )}
             </div>
         </div>
