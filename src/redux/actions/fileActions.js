@@ -46,7 +46,7 @@ export const uploadFile = createAsyncThunk(
         formData.append('file', file);
 
         try {
-            const response = await axios.post(`${process.env.REACT_APP_API_BASE_URL}/upload`, formData, {
+            const response = await axios.post(`${process.env.REACT_APP_BACK_END_API_BASE_URL}/upload`, formData, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -126,7 +126,7 @@ export const downloadFile = (cid, expectedHash, navigate, token) => async (dispa
 
     try {
         // Assuming you have the token available here, similar to the upload process
-        const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/download/${cid}`, {
+        const response = await fetch(`${process.env.REACT_APP_BACK_END_API_BASE_URL}/download/${cid}`, {
             method: 'GET',
             headers: {
                 // Include the Authorization header with the token

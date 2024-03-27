@@ -2,7 +2,7 @@
 
 export const authenticateUser = (web3, account) => async (dispatch) => {
     try {
-        const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/generateNonce`, {
+        const response = await fetch(`${process.env.REACT_APP_BACK_END_API_BASE_URL}/generateNonce`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -14,7 +14,7 @@ export const authenticateUser = (web3, account) => async (dispatch) => {
 
         const signature = await web3.eth.personal.sign(nonce, account, '');
 
-        const verifyResponse = await fetch(`${process.env.REACT_APP_API_BASE_URL}/verifySignature`, {
+        const verifyResponse = await fetch(`${process.env.REACT_APP_BACK_END_API_BASE_URL}/verifySignature`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -47,7 +47,7 @@ export const checkAuthToken = () => async (dispatch) => {
     }
 
     try {
-        const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/checkToken`, {
+        const response = await fetch(`${process.env.REACT_APP_BACK_END_API_BASE_URL}/checkToken`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
