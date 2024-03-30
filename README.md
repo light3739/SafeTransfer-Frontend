@@ -1,70 +1,74 @@
-# Getting Started with Create React App
+# Front-end Documentation
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+## Overview
 
-## Available Scripts
+This documentation provides an overview of the front-end structure and key components for a web application that integrates with Ethereum blockchain using MetaMask for authentication and file handling operations such as upload and download. The application is built using React, Redux for state management, and Web3.js for interacting with Ethereum.
 
-In the project directory, you can run:
+## Project Structure
 
-### `npm start`
+The project is organized as follows:
+- **src/**
+    - **assets/**: Static assets like images.
+    - **components/**: Reusable UI components.
+    - **contracts/**: Smart contract JSON files.
+    - **hooks/**: Custom React hooks.
+    - **redux/**: Redux setup including actions, reducers, and slices.
+    - **App.css**: Global styles.
+    - **App.js**: Main application component.
+    - **App.test.js**: Tests for the App component.
+    - **index.css**: Base CSS.
+    - **index.js**: Entry point for React application.
+    - **logo.svg**: Application logo.
+    - **reportWebVitals.js**: Tool for measuring performance.
+    - **setupTests.js**: Setup file for Jest tests.
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+### Key Components
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+- **MetaMaskLogin**: Handles MetaMask wallet connection.
+- **FileUpload**: Allows users to upload files to the Ethereum blockchain.
+- **FileDownload**: Enables users to download files from the Ethereum blockchain.
+- **FileRegistry**: Main component that switches between MetaMask login and file upload based on authentication status.
 
-### `npm test`
+### Hooks
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+- **useWeb3**: Custom hook for initializing and managing Web3 and user accounts.
 
-### `npm run build`
+### Redux Structure
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+- **actions**: Contains Redux actions for authentication and file operations.
+- **reducers**: Reducers for handling actions related to authentication and file operations.
+- **slices**: Uses Redux Toolkit to manage Web3 state.
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+## Key Functionalities
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+### MetaMask Authentication
 
-### `npm run eject`
+The application uses MetaMask for user authentication. Users are prompted to connect their MetaMask wallet to interact with the application.
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+### File Upload
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+Authenticated users can upload files to the Ethereum blockchain. The application initializes a smart contract instance and uses it to store file details.
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+### File Download
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+Users can download files from the Ethereum blockchain using a unique content identifier (CID). The application fetches file details from the blockchain and provides a download option.
 
-## Learn More
+## Development Best Practices
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+- **State Management**: Use Redux Toolkit for efficient state management and to reduce boilerplate code.
+- **Smart Contract Interaction**: Use Web3.js for interacting with Ethereum blockchain and handling smart contracts.
+- **UI Components**: Utilize React functional components and hooks for better performance and code readability.
+- **Error Handling**: Implement comprehensive error handling to improve user experience and debug issues effectively.
+- **Security**: Ensure secure handling of user authentication and interaction with the blockchain.
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+## Libraries and Frameworks
 
-### Code Splitting
+- **React**: For building the user interface.
+- **Redux and Redux Toolkit**: For state management.
+- **Web3.js**: For interacting with Ethereum blockchain.
+- **React Router**: For routing and navigation.
+- **Tailwind CSS**: For styling components.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+## Conclusion
 
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+This documentation outlines the structure and functionalities of a React-based front-end application that integrates with the Ethereum blockchain for file handling operations. By following the outlined best practices and utilizing the mentioned libraries and frameworks, developers can efficiently build and maintain blockchain-integrated applications.
