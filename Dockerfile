@@ -1,22 +1,30 @@
-# Step 1: Use the official Node.js image as the base image
-FROM node:16-alpine as development
+# Use the official Node.js LTS (Long Term Support) image as the base image
+FROM node:16-alpine AS builder
 
 # Set the working directory in the Docker container
 WORKDIR /app
 
-# Copy package.json and package-lock.json to leverage Docker cache
-COPY package*.json ./
-COPY .env .
-
-
 # Install dependencies
-RUN npm install
+COPY package*.json ./
+RUN npm ci --only=production
 
-# Copy the rest of your app's source code from your host to your image filesystem.
+# Copy the rest of your app's source code
 COPY . .
 
-# Expose the port the app runs on
-EXPOSE 3000
+ARG REACT_APP_BACK_END_API_BASE_URL
+ENV REACT_APP_BACK_END_API_BASE_URL $REACT_APP_BACK_END_API_BASE_URL
 
-# Command to run the app
-CMD ["npm", "start"]
+# Build the React app
+RUN npm run build
+
+# Use a minimal nginx image for serving the built app
+FROM nginx:stable-alpine
+
+# Copy the built app from the builder stage
+COPY --from=builder /app/build /usr/share/nginx/html
+
+# Expose the port on which nginx listens
+EXPOSE 80
+
+# Start nginx
+CMD ["nginx", "-g", "daemon off;"]
